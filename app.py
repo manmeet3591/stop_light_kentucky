@@ -3,6 +3,7 @@ import pandas as pd
 import geopandas as gpd
 import numpy as np
 import pydeck as pdk
+import streamlit.components.v1 as components
 
 # -----------------------------
 # CONFIG
@@ -216,9 +217,10 @@ def make_hazard_deck(df, level_col, score_col, color_col, hazard_label):
     return deck
 
 
-def render_colorbar(title: str, levels_order, level_to_color):
+def render_colorbar(title: str, levels_order, level_to_color, height: int = 80):
     """
-    Render a simple horizontal colorbar using HTML: little colored boxes with labels.
+    Render a simple horizontal colorbar using raw HTML via components.html
+    so it doesn't get escaped.
     """
     boxes_html = ""
     for level in levels_order:
@@ -250,7 +252,8 @@ def render_colorbar(title: str, levels_order, level_to_color):
         </div>
     </div>
     """
-    st.markdown(html, unsafe_allow_html=True)
+    components.html(html, height=height)
+
 
 # -----------------------------
 # SIDEBAR LEGEND (TEXT SUMMARY)
@@ -294,11 +297,11 @@ overall_deck = make_hazard_deck(
 )
 st.pydeck_chart(overall_deck, width="stretch", height=400)
 
-# Colorbar for overall
 render_colorbar(
     "Overall Colorbar",
     OVERALL_LEVELS_ORDER,
     OVERALL_COLOR_MAP,
+    height=90,
 )
 
 st.markdown("---")
@@ -321,11 +324,11 @@ for row_start in range(0, len(HAZARDS), 2):
             )
             st.pydeck_chart(hazard_deck, width="stretch", height=350)
 
-            # Colorbar for this hazard
             render_colorbar(
                 f"{label} Colorbar",
                 HAZARD_LEVELS_ORDER,
                 HAZARD_COLOR_MAPS[key],
+                height=80,
             )
 
 st.caption(
