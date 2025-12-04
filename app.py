@@ -71,13 +71,6 @@ def overall_score_to_level(score: float) -> str:
         return "High (Red)"
 
 
-OVERALL_LEVELS_ORDER = [
-    "Very Low (White)",
-    "Low (Green)",
-    "Elevated (Yellow)",
-    "High (Red)",
-]
-
 OVERALL_COLOR_MAP = {
     "Very Low (White)": [255, 255, 255],  # White
     "Low (Green)": [0, 128, 0],           # Green
@@ -97,8 +90,6 @@ def hazard_score_to_level(score: float) -> str:
     else:
         return "High"
 
-
-HAZARD_LEVELS_ORDER = ["Low", "Medium", "High"]
 
 # Color maps for each hazard
 HAZARD_COLOR_MAPS = {
@@ -187,7 +178,7 @@ view_state = pdk.ViewState(
 )
 
 # -----------------------------
-# HELPERS
+# HELPER TO MAKE A MAP
 # -----------------------------
 def make_hazard_deck(df, level_col, score_col, color_col, hazard_label):
     layer = pdk.Layer(
@@ -213,18 +204,6 @@ def make_hazard_deck(df, level_col, score_col, color_col, hazard_label):
         tooltip={"html": tooltip_html, "style": {"color": "black"}},
     )
     return deck
-
-
-def plot_level_counts(df, level_col, order):
-    counts = (
-        df[level_col]
-        .value_counts()
-        .reindex(order)
-        .fillna(0)
-        .astype(int)
-    )
-    st.bar_chart(counts)
-
 
 # -----------------------------
 # SIDEBAR LEGEND
@@ -257,38 +236,21 @@ All values are random demo data.
     )
 
 # -----------------------------
-# LAYOUT: ALL MAPS ON ONE PAGE
+# LAYOUT: ALL MAPS ON ONE PAGE (MAPS ONLY)
 # -----------------------------
 
 # ---- Overall section ----
 st.markdown("## Overall Multi-Hazard Threat (Stoplight – White / Green / Yellow / Red)")
 
-overall_col_map, overall_col_stats = st.columns([2, 1])
-
-with overall_col_map:
-    overall_deck = make_hazard_deck(
-        counties, "overall_level", "overall_score", "overall_color", "Overall"
-    )
-    st.pydeck_chart(overall_deck)
-
-with overall_col_stats:
-    st.markdown("**Overall Level Distribution**")
-    plot_level_counts(counties, "overall_level", OVERALL_LEVELS_ORDER)
-
-    st.markdown("**Sample Data (Top 20 Counties by Overall Score)**")
-    st.dataframe(
-        counties[["NAME", "overall_level", "overall_score"]]
-        .drop_duplicates(subset=["NAME"])
-        .sort_values("overall_score", ascending=False)
-        .head(20)
-        .reset_index(drop=True)
-    )
+overall_deck = make_hazard_deck(
+    counties, "overall_level", "overall_score", "overall_color", "Overall"
+)
+st.pydeck_chart(overall_deck, use_container_width=True)
 
 st.markdown("---")
 st.markdown("## Hazard-Specific Maps")
 
 # ---- Hazard maps in a grid (3 rows × 2 columns) ----
-# Chunk hazards into pairs for 2-column rows
 for row_start in range(0, len(HAZARDS), 2):
     row_hazards = HAZARDS[row_start:row_start + 2]
     cols = st.columns(len(row_hazards))
@@ -303,19 +265,7 @@ for row_start in range(0, len(HAZARDS), 2):
             hazard_deck = make_hazard_deck(
                 counties, level_col, score_col, color_col, label
             )
-            st.pydeck_chart(hazard_deck)
-
-            st.markdown(f"**{label} Level Distribution**")
-            plot_level_counts(counties, level_col, HAZARD_LEVELS_ORDER)
-
-            st.markdown(f"**Top 10 Counties by {label} Score**")
-            st.dataframe(
-                counties[["NAME", level_col, score_col]]
-                .drop_duplicates(subset=["NAME"])
-                .sort_values(score_col, ascending=False)
-                .head(10)
-                .reset_index(drop=True)
-            )
+            st.pydeck_chart(hazard_deck, use_container_width=True)
 
 st.caption(
     "Demo only – all hazard scores are random. Replace with real Kentucky flood, "
