@@ -48,7 +48,6 @@ counties = load_counties()
 # -----------------------------
 # HAZARD DEFINITIONS
 # -----------------------------
-# 6 hazards for the 6 tabs
 HAZARDS = [
     ("Flooding", "flood"),
     ("Winter Weather", "winter"),
@@ -258,63 +257,63 @@ All values are random demo data.
     )
 
 # -----------------------------
-# 7 TABS: OVERALL + 6 HAZARDS
+# LAYOUT: ALL MAPS ON ONE PAGE
 # -----------------------------
-tab_labels = ["Overall"] + [label for label, _ in HAZARDS]
-tabs = st.tabs(tab_labels)
 
-# ---- Overall tab ----
-with tabs[0]:
-    st.subheader("Overall Multi-Hazard Threat (Stoplight – White / Green / Yellow / Red)")
+# ---- Overall section ----
+st.markdown("## Overall Multi-Hazard Threat (Stoplight – White / Green / Yellow / Red)")
 
-    col_map, col_stats = st.columns([2, 1])
+overall_col_map, overall_col_stats = st.columns([2, 1])
 
-    with col_map:
-        deck = make_hazard_deck(
-            counties, "overall_level", "overall_score", "overall_color", "Overall"
-        )
-        st.pydeck_chart(deck)
+with overall_col_map:
+    overall_deck = make_hazard_deck(
+        counties, "overall_level", "overall_score", "overall_color", "Overall"
+    )
+    st.pydeck_chart(overall_deck)
 
-    with col_stats:
-        st.markdown("**Overall Level Distribution**")
-        plot_level_counts(counties, "overall_level", OVERALL_LEVELS_ORDER)
+with overall_col_stats:
+    st.markdown("**Overall Level Distribution**")
+    plot_level_counts(counties, "overall_level", OVERALL_LEVELS_ORDER)
 
-        st.markdown("**Sample Data (Top 20 Counties by Overall Score)**")
-        st.dataframe(
-            counties[["NAME", "overall_level", "overall_score"]]
-            .drop_duplicates(subset=["NAME"])
-            .sort_values("overall_score", ascending=False)
-            .head(20)
-            .reset_index(drop=True)
-        )
+    st.markdown("**Sample Data (Top 20 Counties by Overall Score)**")
+    st.dataframe(
+        counties[["NAME", "overall_level", "overall_score"]]
+        .drop_duplicates(subset=["NAME"])
+        .sort_values("overall_score", ascending=False)
+        .head(20)
+        .reset_index(drop=True)
+    )
 
-# ---- Hazard-specific tabs ----
-for i, (label, key) in enumerate(HAZARDS, start=1):
-    score_col = f"{key}_score"
-    level_col = f"{key}_level"
-    color_col = f"{key}_color"
+st.markdown("---")
+st.markdown("## Hazard-Specific Maps")
 
-    with tabs[i]:
-        st.subheader(f"{label} Hazard Map")
+# ---- Hazard maps in a grid (3 rows × 2 columns) ----
+# Chunk hazards into pairs for 2-column rows
+for row_start in range(0, len(HAZARDS), 2):
+    row_hazards = HAZARDS[row_start:row_start + 2]
+    cols = st.columns(len(row_hazards))
 
-        col_map, col_stats = st.columns([2, 1])
+    for (label, key), col in zip(row_hazards, cols):
+        score_col = f"{key}_score"
+        level_col = f"{key}_level"
+        color_col = f"{key}_color"
 
-        with col_map:
-            deck = make_hazard_deck(
+        with col:
+            st.markdown(f"### {label}")
+            hazard_deck = make_hazard_deck(
                 counties, level_col, score_col, color_col, label
             )
-            st.pydeck_chart(deck)
+            st.pydeck_chart(hazard_deck)
 
-        with col_stats:
             st.markdown(f"**{label} Level Distribution**")
             plot_level_counts(counties, level_col, HAZARD_LEVELS_ORDER)
 
-            st.markdown(f"**Sample Data (Top 20 Counties by {label} Score)**")
+            st.markdown(f"**Top 10 Counties by {label} Score**")
             st.dataframe(
                 counties[["NAME", level_col, score_col]]
                 .drop_duplicates(subset=["NAME"])
                 .sort_values(score_col, ascending=False)
-                .head(20)
+                .head(10)
                 .reset_index(drop=True)
             )
 
