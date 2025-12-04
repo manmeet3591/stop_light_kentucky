@@ -175,9 +175,10 @@ def geometry_to_coordinates(geom):
 
 counties["coordinates"] = counties["geometry"].apply(geometry_to_coordinates)
 
-# Map center
-center_lon = counties.geometry.centroid.x.mean()
-center_lat = counties.geometry.centroid.y.mean()
+# Use bounds for map center (no centroid warnings)
+minx, miny, maxx, maxy = counties.total_bounds
+center_lon = (minx + maxx) / 2
+center_lat = (miny + maxy) / 2
 
 view_state = pdk.ViewState(
     longitude=center_lon,
@@ -227,12 +228,12 @@ def render_colorbar(title: str, levels_order, level_to_color):
             display:flex;
             flex-direction:column;
             align-items:center;
-            margin-right:8px;
+            margin-right:10px;
             font-size:0.7rem;
         ">
             <div style="
-                width:32px;
-                height:12px;
+                width:40px;
+                height:14px;
                 border:1px solid #555;
                 background-color: rgb({rgb[0]}, {rgb[1]}, {rgb[2]});
                 margin-bottom:2px;
@@ -242,8 +243,8 @@ def render_colorbar(title: str, levels_order, level_to_color):
         """
 
     html = f"""
-    <div style="margin-top:4px; margin-bottom:12px;">
-        <div style="font-size:0.8rem; font-weight:600; margin-bottom:2px;">{title}</div>
+    <div style="margin-top:6px; margin-bottom:16px;">
+        <div style="font-size:0.8rem; font-weight:600; margin-bottom:4px;">{title}</div>
         <div style="display:flex; align-items:flex-start; flex-wrap:wrap;">
             {boxes_html}
         </div>
@@ -291,7 +292,7 @@ st.markdown("## Overall Multi-Hazard Threat")
 overall_deck = make_hazard_deck(
     counties, "overall_level", "overall_score", "overall_color", "Overall"
 )
-st.pydeck_chart(overall_deck, use_container_width=True)
+st.pydeck_chart(overall_deck, width="stretch", height=400)
 
 # Colorbar for overall
 render_colorbar(
@@ -318,7 +319,7 @@ for row_start in range(0, len(HAZARDS), 2):
             hazard_deck = make_hazard_deck(
                 counties, level_col, score_col, color_col, label
             )
-            st.pydeck_chart(hazard_deck, use_container_width=True)
+            st.pydeck_chart(hazard_deck, width="stretch", height=350)
 
             # Colorbar for this hazard
             render_colorbar(
