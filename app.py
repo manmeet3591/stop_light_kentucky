@@ -71,6 +71,13 @@ def overall_score_to_level(score: float) -> str:
         return "High (Red)"
 
 
+OVERALL_LEVELS_ORDER = [
+    "Very Low (White)",
+    "Low (Green)",
+    "Elevated (Yellow)",
+    "High (Red)",
+]
+
 OVERALL_COLOR_MAP = {
     "Very Low (White)": [255, 255, 255],  # White
     "Low (Green)": [0, 128, 0],           # Green
@@ -90,6 +97,8 @@ def hazard_score_to_level(score: float) -> str:
     else:
         return "High"
 
+
+HAZARD_LEVELS_ORDER = ["Low", "Medium", "High"]
 
 # Color maps for each hazard
 HAZARD_COLOR_MAPS = {
@@ -178,7 +187,7 @@ view_state = pdk.ViewState(
 )
 
 # -----------------------------
-# HELPER TO MAKE A MAP
+# HELPERS
 # -----------------------------
 def make_hazard_deck(df, level_col, score_col, color_col, hazard_label):
     layer = pdk.Layer(
@@ -205,47 +214,91 @@ def make_hazard_deck(df, level_col, score_col, color_col, hazard_label):
     )
     return deck
 
+
+def render_colorbar(title: str, levels_order, level_to_color):
+    """
+    Render a simple horizontal colorbar using HTML: little colored boxes with labels.
+    """
+    boxes_html = ""
+    for level in levels_order:
+        rgb = level_to_color[level]
+        boxes_html += f"""
+        <div style="
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            margin-right:8px;
+            font-size:0.7rem;
+        ">
+            <div style="
+                width:32px;
+                height:12px;
+                border:1px solid #555;
+                background-color: rgb({rgb[0]}, {rgb[1]}, {rgb[2]});
+                margin-bottom:2px;
+            "></div>
+            <span>{level}</span>
+        </div>
+        """
+
+    html = f"""
+    <div style="margin-top:4px; margin-bottom:12px;">
+        <div style="font-size:0.8rem; font-weight:600; margin-bottom:2px;">{title}</div>
+        <div style="display:flex; align-items:flex-start; flex-wrap:wrap;">
+            {boxes_html}
+        </div>
+    </div>
+    """
+    st.markdown(html, unsafe_allow_html=True)
+
 # -----------------------------
-# SIDEBAR LEGEND
+# SIDEBAR LEGEND (TEXT SUMMARY)
 # -----------------------------
 with st.sidebar:
-    st.header("Legends")
+    st.header("Legends (Summary)")
 
     st.markdown("### Overall (Stoplight)")
     st.markdown(
         """
-- **White** – Very Low
-- **Green** – Low
-- **Yellow** – Elevated
-- **Red** – High
+- **White** – Very Low  
+- **Green** – Low  
+- **Yellow** – Elevated  
+- **Red** – High  
 """
     )
 
     st.markdown("### Hazard Color Ramps")
     st.markdown(
         """
-- **Flooding** – 3 greens (light → dark)
-- **Winter Weather** – 3 blues
-- **Wind** – 3 purples
-- **Severe Weather** – 3 reds
-- **Extreme Temperature** – blue (low) → orange (high)
-- **Other** – 3 grays (light → dark)
+- **Flooding** – 3 greens (light → dark)  
+- **Winter Weather** – 3 blues  
+- **Wind** – 3 purples  
+- **Severe Weather** – 3 reds  
+- **Extreme Temperature** – blue (low) → orange (high)  
+- **Other** – 3 grays (light → dark)  
 
 All values are random demo data.
 """
     )
 
 # -----------------------------
-# LAYOUT: ALL MAPS ON ONE PAGE (MAPS ONLY)
+# LAYOUT: ALL MAPS ON ONE PAGE
 # -----------------------------
 
 # ---- Overall section ----
-st.markdown("## Overall Multi-Hazard Threat (Stoplight – White / Green / Yellow / Red)")
+st.markdown("## Overall Multi-Hazard Threat")
 
 overall_deck = make_hazard_deck(
     counties, "overall_level", "overall_score", "overall_color", "Overall"
 )
 st.pydeck_chart(overall_deck, use_container_width=True)
+
+# Colorbar for overall
+render_colorbar(
+    "Overall Colorbar",
+    OVERALL_LEVELS_ORDER,
+    OVERALL_COLOR_MAP,
+)
 
 st.markdown("---")
 st.markdown("## Hazard-Specific Maps")
@@ -266,6 +319,13 @@ for row_start in range(0, len(HAZARDS), 2):
                 counties, level_col, score_col, color_col, label
             )
             st.pydeck_chart(hazard_deck, use_container_width=True)
+
+            # Colorbar for this hazard
+            render_colorbar(
+                f"{label} Colorbar",
+                HAZARD_LEVELS_ORDER,
+                HAZARD_COLOR_MAPS[key],
+            )
 
 st.caption(
     "Demo only – all hazard scores are random. Replace with real Kentucky flood, "
